@@ -1,6 +1,7 @@
 #ifndef TENSOR_HPP
 #define TENSOR_HPP
 
+#include <span>
 #include <vector>
 #include "GPU.hpp"
 
@@ -11,8 +12,11 @@ class Tensor {
   Tensor(std::vector<int> size) : sizes_(size) {}
 
   // Write operations:
-  void Write(GPU& gpu, std::vector<float> data);
+  void Write(GPU& gpu, const std::vector<float>& data);
+  void WritePartial(GPU& gpu, const std::span<float> data, int offset);
+  void WritePartialBatch(GPU& gpu, const std::span<float> data, int batch_offset);
   void Fill(GPU& gpu, float value);
+  void FillRandomGaussian(GPU& gpu, float mean, float stddev);
 
   // Copy operations
   void CopyTo(GPU& gpu, Tensor& other);

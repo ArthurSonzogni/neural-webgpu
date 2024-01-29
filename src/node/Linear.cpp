@@ -9,6 +9,8 @@
 Node Linear(Node input, int output_size) {
   class Impl : public NodeImpl {
    public:
+    std::string Name() override { return "Linear"; }
+
     int batch_size_;
     int input_size_;
     int output_size_;
@@ -22,8 +24,8 @@ Node Linear(Node input, int output_size) {
           Tensor({input_size_, output_size_}),  // Weights.
           Tensor({output_size_}),               // Bias.
       };
-      weights[0].Fill(gpu(), 0.f);
-      weights[1].Fill(gpu(), 0.f);
+      weights[0].FillRandomGaussian(gpu(), 0.f, 1.f / sqrtf(input_size_));
+      weights[1].FillRandomGaussian(gpu(), 0.f, 1.f / sqrtf(input_size_));
 
       outputs = {
           Tensor({
@@ -64,10 +66,10 @@ Node Linear(Node input, int output_size) {
             }}
 
             var x_index = 0 + x_size * batch;
-            var y_index = y + y_size * batch;
+            let y_index = y + y_size * batch;
             var w_index = 0 + x_size * y;
             var sum : f32 = 0.f;
-            for (var i = 0u; i < x_size; i = i + 1) {{
+            for (var i = 0u; i < x_size; i++) {{
                 sum += input[x_index] * weights[w_index];
                 x_index++;
                 w_index++;
@@ -84,10 +86,10 @@ Node Linear(Node input, int output_size) {
                 return;
             }}
 
-            var x_index = x + x_size * batch;
+            let x_index = x + x_size * batch;
             var w_index = x;
             var sum : f32 = 0.0;
-            for (var i = 0u; i < y_size; i = i + 1) {{
+            for (var i = 0u; i < y_size; i++) {{
                 sum += output_gradient[i + y_size * batch] * weights[w_index];
                 w_index += x_size;
             }}
@@ -115,7 +117,7 @@ Node Linear(Node input, int output_size) {
           weights_gradient[w] = sum;
         }}
 
-        @compute @workgroup_size(64, 1, 1)
+        @compute @workgroup_size(256, 1, 1)
         fn fn_bias_gradient(@builtin(global_invocation_id) id: vec3<u32>) {{
           let y = id.x;
           if (y >= y_size) {{
@@ -124,10 +126,8 @@ Node Linear(Node input, int output_size) {
 
 
           var sum : f32 = 0.0;
-          var y_index = y;
           for(var batch = 0u; batch < batch_size; batch++) {{
-            sum += output_gradient[y_index];
-            y_index += y_size; // Next batch.
+            sum += output_gradient[y + y_size * batch];
           }}
 
           bias_gradient[y] = sum;
@@ -135,47 +135,41 @@ Node Linear(Node input, int output_size) {
      )",
                                     input_size_, output_size_, batch_size_));
 
-      pipeline_.Init(gpu(), module,
-                     {
-                         &input->outputs[0],
-                         &input->outputs_gradients[0],
-                         &weights[0],
-                         &weights[1],
-                         &weights_gradients[0],
-                         &weights_gradients[1],
-                         &outputs[0],
-                         &outputs_gradients[0],
-                     });
+      pipeline_.Init(module, {
+                                 &input->outputs[0],
+                                 &input->outputs_gradients[0],
+                                 &weights[0],
+                                 &weights[1],
+                                 &weights_gradients[0],
+                                 &weights_gradients[1],
+                                 &outputs[0],
+                                 &outputs_gradients[0],
+                             });
     }
 
     void Forward() override {
-      pipeline_.Run(gpu(), "fn_output",        //
+      pipeline_.Run("fn_output",               //
                     (output_size_ + 31) / 32,  //
-                    (batch_size_ + 3) / 4,     //
-                    1                          //
+                    (batch_size_ + 3) / 4      //
       );
     }
     void Backward() override {
-      pipeline_.Run(gpu(), "fn_input_gradient",  //
-                    (input_size_ + 31) / 32,     //
-                    (batch_size_ + 3) / 4,       //
-                    1                            //
+      pipeline_.Run("fn_input_gradient",      //
+                    (input_size_ + 31) / 32,  //
+                    (batch_size_ + 3) / 4     //
       );
 
-      pipeline_.Run(gpu(), "fn_weights_gradient",  //
-                    (input_size_ + 15) / 16,       //
-                    (output_size_ + 15) / 16,      //
-                    1                              //
+      pipeline_.Run("fn_weights_gradient",    //
+                    (input_size_ + 15) / 16,  //
+                    (output_size_ + 15) / 16  //
       );
 
-      pipeline_.Run(gpu(), "fn_bias_gradient",  //
-                    (output_size_ + 63) / 64,   //
-                    1,                          //
-                    1                           //
+      pipeline_.Run("fn_bias_gradient",         //
+                    (output_size_ + 255) / 256  //
       );
     }
 
-    NodePipeline pipeline_;
+    NodePipeline pipeline_{gpu()};
   };
   return std::make_shared<Impl>(input, output_size);
 }

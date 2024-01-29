@@ -4,6 +4,8 @@
 Node Input(GPU& gpu, std::vector<int> sizes) {
   class Impl : public NodeImpl {
    public:
+    std::string Name() override { return "Input"; }
+
     Impl(GPU& gpu, std::vector<int> sizes) : NodeImpl(gpu) {
       outputs = {
         Tensor(sizes)

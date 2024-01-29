@@ -7,17 +7,20 @@
 #include "GPU.hpp"
 #include "Tensor.hpp"
 
+// Helper class to run a compute shader on a node. It initializes the webgpu
+// pipeline from a shader.
 class NodePipeline {
  public:
-  void Init(GPU& gpu, wgpu::ShaderModule module, std::vector<Tensor*> tensors);
-  void Run(GPU& gpu,
-           std::string entrypoint,
-           int x_size,
-           int y_size,
-           int z_size);
+  NodePipeline(GPU& gpu): gpu_(gpu) {}
+  void Init(wgpu::ShaderModule module, std::vector<Tensor*> tensors);
+  void Run(std::string entrypoint,
+           int x_size = 1,
+           int y_size = 1,
+           int z_size = 1);
 
  private:
-  wgpu::ComputePipeline& GetPipeline(GPU& gpu, std::string entrypoint);
+  GPU& gpu_;
+  wgpu::ComputePipeline& GetPipeline(std::string entrypoint);
   wgpu::ShaderModule module_;
   wgpu::PipelineLayout pipeline_layout_;
   wgpu::BindGroup bindGroup_;

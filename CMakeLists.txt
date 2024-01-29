@@ -3,21 +3,31 @@ set(CMAKE_CXX_STANDARD 20)
 project(NeuralWebGPU)
 
 add_library(NeuralWebGPU
+	src/Example.hpp
 	src/GPU.cpp
 	src/GPU.hpp
 	src/Model.cpp
-	src/Example.hpp
 	src/Model.hpp
+	src/Node.cpp
+	src/Node.hpp
+	src/Predict.cpp
+	src/Predict.hpp
 	src/Shader.cpp
 	src/Shader.hpp
 	src/Tensor.cpp
 	src/Tensor.hpp
-	src/Node.cpp
-	src/Node.hpp
+	src/node/CrossEntropy.cpp
+	src/node/Difference.cpp
+	src/node/HuberLoss.cpp
 	src/node/Input.cpp
 	src/node/Linear.cpp
 	src/node/NodePipeline.cpp
 	src/node/NodePipeline.hpp
+	src/node/Sigmoid.cpp
+	src/node/Softmax.cpp
+	src/node/Squared.cpp
+	src/node/ReLU.cpp
+	src/node/LeakyReLU.cpp
 )
 target_include_directories(NeuralWebGPU PUBLIC src)
 
@@ -132,6 +142,7 @@ enable_testing()
 include(cmake/gtest.cmake)
 add_executable(tests
 	src/node/LinearTest.cpp
+	src/node/SquaredTest.cpp
 )
 target_link_libraries(tests
 	PRIVATE NeuralWebGPU
