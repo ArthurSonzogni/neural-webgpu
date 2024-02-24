@@ -16,18 +16,20 @@ add_library(NeuralWebGPU
 	src/Shader.hpp
 	src/Tensor.cpp
 	src/Tensor.hpp
+	src/node/Conv2D.cpp
 	src/node/CrossEntropy.cpp
 	src/node/Difference.cpp
 	src/node/HuberLoss.cpp
 	src/node/Input.cpp
+	src/node/LeakyReLU.cpp
 	src/node/Linear.cpp
+	src/node/MaxPool2D.cpp
 	src/node/NodePipeline.cpp
 	src/node/NodePipeline.hpp
+	src/node/ReLU.cpp
 	src/node/Sigmoid.cpp
 	src/node/Softmax.cpp
 	src/node/Squared.cpp
-	src/node/ReLU.cpp
-	src/node/LeakyReLU.cpp
 )
 target_include_directories(NeuralWebGPU PUBLIC src)
 
@@ -141,6 +143,7 @@ endif(NOT MNIST_FOUND)
 enable_testing()
 include(cmake/gtest.cmake)
 add_executable(tests
+	src/node/Conv2DTest.cpp
 	src/node/LinearTest.cpp
 	src/node/SquaredTest.cpp
 )

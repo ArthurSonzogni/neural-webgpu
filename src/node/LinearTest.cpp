@@ -169,8 +169,13 @@ TEST(Linear, MNIST) {
   // Define the model:
   Node x = Input(gpu, {input_size, input_size, batch_size});
   Node y = Input(gpu, {output_size, batch_size});
-  Node l = Linear(LeakyReLU(Linear(x, 30)), output_size);
-  Node predicted  = Softmax(l);
+  Node xx = x;
+  xx = MaxPool2D(xx, 2);
+  xx = Linear(xx, 30);
+  xx = LeakyReLU(xx);
+  xx = Linear(xx, output_size);
+  xx = Softmax(xx);
+  Node predicted = xx;
   Node loss = CrossEntropy(y, predicted);
 
   for(int iteration = 0;; ++iteration) {
@@ -179,7 +184,7 @@ TEST(Linear, MNIST) {
         .Input(y, [&](int i) { return std::span(training_examples[i].output); })
         .Size(training_examples.size())
         .Minimize(loss)
-        .LearningRate(0.06f * std::pow(iteration + 1, -0.3f))
+        .LearningRate(0.2f * std::pow(iteration + 1, -0.3f))
         .Epochs(1)
         .Execute();
 
