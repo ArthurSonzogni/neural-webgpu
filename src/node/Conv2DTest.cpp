@@ -96,7 +96,7 @@ TEST(Conv2D, MNIST) {
       GetExamplesCentered(mnist.test_images, mnist.test_labels);
 
   GPU gpu;
-  const int batch_size = 16;
+  const int batch_size = 512;
   const int input_size = 28;
   const int output_size = 10;
 
@@ -106,16 +106,14 @@ TEST(Conv2D, MNIST) {
   Node xx = x;
 
   // 28x28x512 -> 13x13x8x512
-  xx = Conv2D(xx,              //
-              /*kernel=*/4,    //
-              /*channels=*/8,  //
-              /*stride=*/2     //
+  xx = Conv2D(xx,               //
+              /*kernel=*/6,     //
+              /*channels=*/16,  //
+              /*stride=*/2      //
   );
-  Node convolution = xx;
-  xx = MaxPool2D(xx, 2);
   xx = LeakyReLU(xx);
 
-  // 4x4x32x512 -> 30x512
+  // 2x2x32x512 -> 30x512
   xx = Linear(xx, 30);
   xx = LeakyReLU(xx);
 
@@ -132,9 +130,10 @@ TEST(Conv2D, MNIST) {
         .Input(y, [&](int i) { return std::span(training_examples[i].output); })
         .Size(training_examples.size())
         .Minimize(loss)
-        .LearningRate(0.0001f * std::pow(iteration + 1, -0.3f))
+        .LearningRate(0.3f * std::pow(iteration + 1, -0.3f))
         .Epochs(1)
         .Execute();
+    fmt::print("Iteration: {}\n", iteration);
 
     std::vector<std::vector<float>> predictions =
         Predict()
@@ -143,21 +142,7 @@ TEST(Conv2D, MNIST) {
             .Size(test_examples.size())
             .Execute();
 
-    // Print the first weight matrix:
-    auto weights = convolution->weights[0].Read(gpu);
-    int i = 0;
-    for(auto w : weights) {
-      if (i % 16 == 0) {
-        fmt::print("\n");
-      }
-      if (i % 4 == 0) {
-        fmt::print("\n");
-      }
-      fmt::print("{:+.2f} ", w);
-
-      i++;
-    }
-    fmt::print("\n");
+    bool show = false;
 
     float error = 0;
     for(int i = 0; i < predictions.size(); ++i) {
@@ -176,13 +161,45 @@ TEST(Conv2D, MNIST) {
       int expected_argmax = argmax(test_examples[i].output);
 
       error += (prediction_argmax != expected_argmax);
+
+      if (prediction_argmax == expected_argmax) {
+        continue;
+      }
+      if (show) {
+        continue;
+      }
+      show = true;
+
+      fmt::print("Error: {} vs {}\n", prediction_argmax, expected_argmax);
+      for (int y = 0; y < 28; ++y) {
+        for (int x = 0; x < 28; ++x) {
+          const auto value = test_examples[i].input[x + 28*(y)];
+
+          if (value < -0.5) {
+            fmt::print(" ");
+            continue;
+          }
+
+          if (value < -0) {
+            fmt::print(".");
+            continue;
+          }
+
+          if (value < +0.5) {
+            fmt::print("x");
+            continue;
+          }
+
+          fmt::print("0");
+        }
+        fmt::print("\n");
+      }
     }
 
-    error /= predictions.size();
-
-    fmt::print("Iteration: {} Error: {}\n", iteration, error);
-    if (error < 0.05) {
-      break;
-    }
+    fmt::print("Iteration: {} Error: {}/{} = {}\n", iteration, error,
+               predictions.size(), error / predictions.size());
+    //if (error < 0.05) {
+      //break;
+    //}
   }
 }

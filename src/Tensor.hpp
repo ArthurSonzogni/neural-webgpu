@@ -11,6 +11,9 @@ class Tensor {
   Tensor() = default;
   Tensor(std::vector<int> size) : sizes_(size) {}
 
+  // Name operations:
+  void SetName(std::string name) { name_ = name; }
+
   // Write operations:
   void Write(GPU& gpu, const std::vector<float>& data);
   void WritePartial(GPU& gpu, const std::span<float> data, int offset);
@@ -35,6 +38,7 @@ class Tensor {
   void CreateBuffer(GPU& gpu);
 
   std::vector<int> sizes_;
+  std::string name_ = "Tensor";
   wgpu::Buffer buffer_;
 };
 

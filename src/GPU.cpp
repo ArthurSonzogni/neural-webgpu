@@ -1,5 +1,5 @@
 #include "GPU.hpp"
-#include <iostream>
+#include "fmt/format.h"
 #include <set>
 
 namespace {
@@ -70,7 +70,7 @@ void GPU::OnAdapterFound(WGPURequestAdapterStatus status,
                          WGPUAdapter adapter_handle,
                          char const* message) {
   if (status != WGPURequestAdapterStatus_Success) {
-    std::cout << "Failed to find an adapter: " << message << std::endl;
+    fmt::print("Failed to find an adapter: {}\n", message);
     exit(0);
     return;
   }
@@ -98,7 +98,7 @@ void GPU::OnDeviceFound(WGPURequestDeviceStatus status,
                         WGPUDevice device_handle,
                         char const* message) {
   if (status != WGPURequestDeviceStatus_Success) {
-    std::cout << "Failed to create device: " << message << std::endl;
+    fmt::print("Failed to create device: {}\n", message);
     exit(0);
     return;
   }
@@ -111,17 +111,55 @@ void GPU::OnDeviceFound(WGPURequestDeviceStatus status,
 }
 
 void GPU::OnError(WGPUErrorType type, char const* message) {
-  std::cout << "Device error: " << std::endl;
-  std::cout << "- type " << type << std::endl;
-  if (message) {
-    std::cout << " - message: " << message << std::endl;
+  switch(type) {
+    case WGPUErrorType_NoError:
+      fmt::print("WGPU: No error: {}\n", message);
+      break;
+
+    case WGPUErrorType_Validation:
+      fmt::print("WGPU: Validation error: {}\n", message);
+      break;
+
+    case WGPUErrorType_OutOfMemory:
+      fmt::print("WGPU: Out of memory: {}\n", message);
+      break;
+
+    case WGPUErrorType_Internal:
+      fmt::print("WGPU: Internal error: {}\n", message);
+      break;
+
+    case WGPUErrorType_Unknown:
+      fmt::print("WGPU: Unknown error: {}\n", message);
+      break;
+
+    case WGPUErrorType_DeviceLost:
+      fmt::print("WGPU: Device lost: {}\n", message);
+      break;
+
+    case WGPUErrorType_Force32:
+      fmt::print("WGPU: Force32 error: {}\n", message);
+      break;
+
+    default:
+      fmt::print("WGPU: Unknown error type: {}\n", message);
+      break;
   }
 }
 
 void GPU::OnDeviceLost(WGPUDeviceLostReason reason, char const* message) {
-  if (message) {
-    std::cout << "Device lost: " << message << std::endl;
-  } else {
-    std::cout << "Device lost" << std::endl;
+  switch(reason) {
+    case WGPUDeviceLostReason_Undefined:
+      fmt::print("WGPU: Device lost (undefined), {}\n", message);
+      break;
+    case WGPUDeviceLostReason_Destroyed:
+      fmt::print("WGPU: Device lost destroyed, {}\n", message);
+      break;
+    case WGPUDeviceLostReason_Force32:
+      fmt::print("WGPU: Device lost force 32, {}\n", message);
+      break;
+
+    default:
+      fmt::print("WGPU: Device lost (default), {}\n", message);
+      break;
   }
 }

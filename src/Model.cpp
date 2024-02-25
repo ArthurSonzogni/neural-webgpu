@@ -74,5 +74,7 @@ void Model::Execute() {
     for (NodePtr node : backward_nodes) {
       node->UpdateParameters(learning_rate_ / batch_size);
     }
+
+    gpu.Instance().ProcessEvents();
   }
 }

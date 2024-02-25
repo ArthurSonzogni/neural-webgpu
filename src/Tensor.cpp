@@ -17,7 +17,7 @@ void Tensor::CreateBuffer(GPU& gpu) {
   }
 
   wgpu::BufferDescriptor bufferDesc = {
-      .label = "Tensor",
+      .label = name_.c_str(),
       .usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc |
                wgpu::BufferUsage::CopyDst,
       .size = TotalSize() * sizeof(float),

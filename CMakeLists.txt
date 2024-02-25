@@ -1,6 +1,37 @@
 cmake_minimum_required (VERSION 3.11)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 project(NeuralWebGPU)
+
+# A function that read the .wgsl file and convert it to a string that can be
+# used in C++ code
+function(WGSL source_file)
+	string(REGEX REPLACE
+		"${CMAKE_CURRENT_SOURCE_DIR}"
+		"${CMAKE_CURRENT_BINARY_DIR}"
+		gen_file
+		${source_file}
+	)
+  get_filename_component(source_filename ${source_file} NAME_WE)
+  add_custom_command(
+		DEPENDS
+			${source_file}
+			${CMAKE_CURRENT_SOURCE_DIR}/wgsl_to_hpp.sh
+    OUTPUT
+			${gen_file}.hpp
+		COMMAND
+			sh
+		ARGS
+		  ${CMAKE_CURRENT_SOURCE_DIR}/wgsl_to_hpp.sh 
+			${source_filename}
+			${source_file}
+			${gen_file}.hpp
+	)
+endfunction()
+
+FILE(GLOB WGSL_FILES "src/node/*.wgsl")
+foreach(WGSL_FILE ${WGSL_FILES})
+	WGSL(${WGSL_FILE})
+endforeach()
 
 add_library(NeuralWebGPU
 	src/Example.hpp
@@ -17,21 +48,33 @@ add_library(NeuralWebGPU
 	src/Tensor.cpp
 	src/Tensor.hpp
 	src/node/Conv2D.cpp
+	src/node/Conv2D.wgsl.hpp
 	src/node/CrossEntropy.cpp
+	src/node/CrossEntropy.wgsl.hpp
 	src/node/Difference.cpp
+	src/node/Difference.wgsl.hpp
 	src/node/HuberLoss.cpp
+	src/node/HuberLoss.wgsl.hpp
 	src/node/Input.cpp
 	src/node/LeakyReLU.cpp
+	src/node/LeakyReLU.wgsl.hpp
 	src/node/Linear.cpp
+	src/node/Linear.wgsl.hpp
 	src/node/MaxPool2D.cpp
+	src/node/MaxPool2D.wgsl.hpp
 	src/node/NodePipeline.cpp
 	src/node/NodePipeline.hpp
 	src/node/ReLU.cpp
+	src/node/ReLU.wgsl.hpp
 	src/node/Sigmoid.cpp
+	src/node/Sigmoid.wgsl.hpp
 	src/node/Softmax.cpp
+	src/node/Softmax.wgsl.hpp
 	src/node/Squared.cpp
+	src/node/Squared.wgsl.hpp
 )
 target_include_directories(NeuralWebGPU PUBLIC src)
+target_include_directories(NeuralWebGPU PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 set(FETCHCONTENT_QUIET OFF)
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
