@@ -21,8 +21,8 @@ Node CrossEntropy(Node a, Node b);
 Node HuberLoss(Node input);
 Node ReLU(Node input);
 Node LeakyReLU(Node input);
-Node Conv2D(Node input, int kernel_size, int channels, int stride = 1);
-Node Conv2DTranspose(Node input, int output_channels, int kernel_size);
+Node Conv2D(Node input, int channels, int kernel_size, int stride = 1);
+Node Conv2DTranspose(Node input, int channels, int kernel_size, int stride = 1);
 Node MaxPool2D(Node input, int kernel_size);
 
 class UpdateParams;

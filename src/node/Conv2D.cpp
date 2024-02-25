@@ -1,12 +1,12 @@
+#include <assert.hpp>
+#include <iostream>
+
 #include "Node.hpp"
 #include "Shader.hpp"
 #include "Tensor.hpp"
 #include "fmt/format.h"
-#include "node/NodePipeline.hpp"
 #include "node/Conv2D.wgsl.hpp"
-
-#include <cassert>
-#include <iostream>
+#include "node/NodePipeline.hpp"
 
 Node Conv2D(Node input, int kernel_size, int channels, int stride) {
   class Impl : public NodeImpl {
@@ -16,21 +16,23 @@ Node Conv2D(Node input, int kernel_size, int channels, int stride) {
     std::vector<int> input_sizes_;
     std::vector<int> output_sizes_;
     int batch_size_ = 1;
-    const int channels_ = 1;
+    const int channels_out = 1;
     const int kernel_size_ = 1;
     const int stride_ = 1;
 
     Impl(Node input, int kernel_size, int channels, int stride)
         : NodeImpl(input),
           kernel_size_(kernel_size),
-          channels_(channels),
+          channels_out(channels),
           stride_(stride) {
+      ASSERT(input->outputs[0].sizes().size() == 4, "Input must be 4D");
+        
       input_sizes_ = input->outputs[0].sizes();
       const int input_dx = input_sizes_[0];
       const int input_dy = input_sizes_[1];
 
-      assert((input_dx - kernel_size_) % stride_ == 0);
-      assert((input_dy - kernel_size_) % stride_ == 0);
+      ASSERT((input_dx - kernel_size_) % stride_ == 0);
+      ASSERT((input_dy - kernel_size_) % stride_ == 0);
       const int output_dx = (input_dx - kernel_size) / stride_ + 1;
       const int output_dy = (input_dy - kernel_size) / stride_ + 1;
 
@@ -38,7 +40,7 @@ Node Conv2D(Node input, int kernel_size, int channels, int stride) {
       output_sizes_ = {
           output_dx,
           output_dy,
-          channels_,
+          channels_out,
           batch_size_,
       };
 
@@ -49,7 +51,7 @@ Node Conv2D(Node input, int kernel_size, int channels, int stride) {
       outputs[0].Fill(gpu(), 0.f);
 
       weights = {
-          Tensor({kernel_size, kernel_size, channels_}),
+          Tensor({kernel_size, kernel_size, channels_out}),
       };
       const float noise = 0.1f / (kernel_size * kernel_size);
       weights[0].SetName("weights[0]");
@@ -60,7 +62,7 @@ Node Conv2D(Node input, int kernel_size, int channels, int stride) {
       wgpu::ShaderModule module = Shader(gpu(), fmt::format(wgsl::Conv2D,  //
                                                             input_dx,      //
                                                             input_dy,      //
-                                                            channels_,     //
+                                                            channels_out,  //
                                                             kernel_size,   //
                                                             stride,        //
                                                             batch_size_));
@@ -79,7 +81,7 @@ Node Conv2D(Node input, int kernel_size, int channels, int stride) {
       pipeline_.Run("fn_output",                   //
                     (output_sizes_[0] + 15) / 16,  //
                     (output_sizes_[1] + 15) / 16,  //
-                    channels_ * batch_size_        //
+                    channels_out * batch_size_        //
       );
     }
 
@@ -92,7 +94,7 @@ Node Conv2D(Node input, int kernel_size, int channels, int stride) {
       pipeline_.Run("fn_weight_gradient",      //
                     (kernel_size_ + 15) / 16,  //
                     (kernel_size_ + 15) / 16,  //
-                    channels_                  //
+                    channels_out               //
       );
     }
 

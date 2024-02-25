@@ -1,5 +1,5 @@
 #include "Predict.hpp"
-#include <cassert>
+#include <assert.hpp>
 #include <iostream>
 #include <fmt/format.h>
 
@@ -23,7 +23,7 @@ Predict& Predict::Size(int size) {
 
 std::vector<std::vector<float>> Predict::Execute() {
   std::vector<std::vector<float>> out;
-  assert(inputs_.size() > 0);
+  ASSERT(inputs_.size() > 0);
 
   NodePtr reference_node = inputs_[0].node.get();
   const int batch_size = reference_node->outputs[0].BatchSize();

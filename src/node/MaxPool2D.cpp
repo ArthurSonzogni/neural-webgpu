@@ -5,7 +5,7 @@
 #include "node/NodePipeline.hpp"
 #include "node/MaxPool2D.wgsl.hpp"
 
-#include <cassert>
+#include <assert.hpp>
 #include <iostream>
 
 Node MaxPool2D(Node input, int kernel_size) {
@@ -19,9 +19,9 @@ Node MaxPool2D(Node input, int kernel_size) {
 
     Impl(Node input, int kernel_size) : NodeImpl(input) {
       input_sizes_ = input->outputs[0].sizes();
-      assert(input_sizes_.size() >= 2);
-      assert(input_sizes_[0] % kernel_size == 0);
-      assert(input_sizes_[1] % kernel_size == 0);
+      ASSERT(input_sizes_.size() >= 2);
+      ASSERT(input_sizes_[0] % kernel_size == 0);
+      ASSERT(input_sizes_[1] % kernel_size == 0);
 
       output_sizes_ = input_sizes_;
       output_sizes_[0] /= kernel_size;

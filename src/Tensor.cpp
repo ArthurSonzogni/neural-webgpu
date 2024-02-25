@@ -1,5 +1,5 @@
 #include "Tensor.hpp"
-#include <cassert>
+#include <assert.hpp>
 #include <random>
 #include "fmt/format.h"
 
@@ -43,7 +43,7 @@ void Tensor::FillRandomGaussian(GPU& gpu, float mean, float stddev) {
 void Tensor::Write(GPU& gpu, const std::vector<float>& data) {
   wgpu::Device& device = gpu.Device();
   CreateBuffer(gpu);
-  assert(data.size() == TotalSize());
+  ASSERT(data.size() == TotalSize());
   gpu.Device().GetQueue().WriteBuffer(buffer_, 0, data.data(),
                                       data.size() * sizeof(float));
 }
@@ -51,7 +51,7 @@ void Tensor::Write(GPU& gpu, const std::vector<float>& data) {
 void Tensor::WritePartial(GPU& gpu, const std::span<float> data, int offset) {
   wgpu::Device& device = gpu.Device();
   CreateBuffer(gpu);
-  assert(offset + data.size() <= TotalSize());
+  ASSERT(offset + data.size() <= TotalSize());
   gpu.Device().GetQueue().WriteBuffer(buffer_, offset * sizeof(float),
                                       data.data(), data.size() * sizeof(float));
 }
@@ -59,7 +59,7 @@ void Tensor::WritePartial(GPU& gpu, const std::span<float> data, int offset) {
 void Tensor::WritePartialBatch(GPU& gpu,
                                const std::span<float> data,
                                int batch_offset) {
-  assert(batch_offset < BatchSize());
+  ASSERT(batch_offset < BatchSize());
   WritePartial(gpu, data, batch_offset * (TotalSize() / BatchSize()));
 }
 
@@ -68,7 +68,7 @@ void Tensor::CopyTo(GPU& gpu, Tensor& other) {
 }
 
 void Tensor::CopyFrom(GPU& gpu, Tensor& other) {
-  assert(sizes_ == other.sizes_);
+  ASSERT(sizes_ == other.sizes_);
   CreateBuffer(gpu);
   other.CreateBuffer(gpu);
   wgpu::CommandEncoder encoder = gpu.Device().CreateCommandEncoder();

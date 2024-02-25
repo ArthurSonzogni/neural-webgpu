@@ -130,7 +130,7 @@ TEST(Conv2D, MNIST) {
         .Input(y, [&](int i) { return std::span(training_examples[i].output); })
         .Size(training_examples.size())
         .Minimize(loss)
-        .LearningRate(0.3f * std::pow(iteration + 1, -0.3f))
+        .LearningRate(0.5f * std::pow(iteration + 1, -0.3f))
         .Epochs(1)
         .Execute();
     fmt::print("Iteration: {}\n", iteration);
@@ -141,8 +141,6 @@ TEST(Conv2D, MNIST) {
             .Output(predicted)
             .Size(test_examples.size())
             .Execute();
-
-    bool show = false;
 
     float error = 0;
     for(int i = 0; i < predictions.size(); ++i) {
@@ -165,41 +163,13 @@ TEST(Conv2D, MNIST) {
       if (prediction_argmax == expected_argmax) {
         continue;
       }
-      if (show) {
-        continue;
-      }
-      show = true;
-
-      fmt::print("Error: {} vs {}\n", prediction_argmax, expected_argmax);
-      for (int y = 0; y < 28; ++y) {
-        for (int x = 0; x < 28; ++x) {
-          const auto value = test_examples[i].input[x + 28*(y)];
-
-          if (value < -0.5) {
-            fmt::print(" ");
-            continue;
-          }
-
-          if (value < -0) {
-            fmt::print(".");
-            continue;
-          }
-
-          if (value < +0.5) {
-            fmt::print("x");
-            continue;
-          }
-
-          fmt::print("0");
-        }
-        fmt::print("\n");
-      }
     }
 
     fmt::print("Iteration: {} Error: {}/{} = {}\n", iteration, error,
                predictions.size(), error / predictions.size());
-    //if (error < 0.05) {
-      //break;
-    //}
+    error /= predictions.size();
+    if (error < 0.02) {
+      break;
+    }
   }
 }

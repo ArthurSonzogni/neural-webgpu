@@ -1,4 +1,4 @@
-#include <cassert>
+#include <assert.hpp>
 #include "Node.hpp"
 #include "Shader.hpp"
 #include "Tensor.hpp"
@@ -16,7 +16,7 @@ Node Difference(Node a, Node b) {
     int size_ = 0;
 
     Impl(Node a, Node b) : NodeImpl(a, b) {
-      assert(a->outputs[0].sizes() ==  //
+      ASSERT(a->outputs[0].sizes() ==  //
              b->outputs[0].sizes());
       size_ = a->outputs[0].TotalSize();
       sizes_ = a->outputs[0].sizes();

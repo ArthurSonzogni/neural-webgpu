@@ -183,6 +183,17 @@ if(NOT MNIST_FOUND)
      git submodule update")
 endif(NOT MNIST_FOUND)
 
+# ┌─────────────────────────────────────────────────┐
+# │ libassert                                       │
+# └─────────────────────────────────────────────────┘
+FetchContent_Declare(assert
+	GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert
+	GIT_TAG cc7e7f42e4fdf601f2157a6d92665a204083f36c # v1.2.2
+	GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(assert)
+target_link_libraries(NeuralWebGPU PRIVATE assert)
+
 enable_testing()
 include(cmake/gtest.cmake)
 add_executable(tests
