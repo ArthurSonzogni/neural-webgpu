@@ -16,7 +16,7 @@ const batch_size : u32 = {};
 @group(0) @binding(6) var<storage, read_write> output: array<f32, y_size * batch_size>;
 @group(0) @binding(7) var<storage, read_write> output_gradient: array<f32, y_size * batch_size>;
 
-@compute @workgroup_size(32, 4, 1)
+@compute @workgroup_size(1, 64, 1)
 fn fn_output(@builtin(global_invocation_id) id: vec3<u32>) {
     let y = id.x;
     let batch = id.y;
@@ -37,7 +37,7 @@ fn fn_output(@builtin(global_invocation_id) id: vec3<u32>) {
     output[y_index] = sum + bias[y];
 }
 
-@compute @workgroup_size(32, 4, 1)
+@compute @workgroup_size(1, 64, 1)
 fn fn_input_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
     let x = id.x;
     let batch = id.y;
@@ -56,7 +56,7 @@ fn fn_input_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
     input_gradient[x_index] = sum;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn fn_weights_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
   var x_index = id.x;
   var y_index = id.y;
@@ -76,7 +76,7 @@ fn fn_weights_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
   weights_gradient[w] = sum;
 }
 
-@compute @workgroup_size(256, 1, 1)
+@compute @workgroup_size(64, 1, 1)
 fn fn_bias_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
   let y = id.x;
   if (y >= y_size) {

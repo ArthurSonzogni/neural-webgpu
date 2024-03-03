@@ -10,7 +10,7 @@ const size : u32 = {};
 @group(0) @binding(4) var<storage, read_write> output: array<f32, size>;
 @group(0) @binding(5) var<storage, read_write> output_gradient: array<f32, size>;
 
-@compute @workgroup_size(256, 1, 1)
+@compute @workgroup_size(64, 1, 1)
 fn fn_output(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let x = global_id.x;
   if (x >= size) {
@@ -22,7 +22,7 @@ fn fn_output(@builtin(global_invocation_id) global_id: vec3<u32>) {
   output[x] = -a * log(b) - (1 - a) * log(1 - b);
 }
 
-@compute @workgroup_size(256, 1, 1)
+@compute @workgroup_size(64, 1, 1)
 fn fn_output_gradient(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let x = global_id.x;
   if (x >= size) {

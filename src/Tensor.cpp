@@ -3,6 +3,17 @@
 #include <random>
 #include "fmt/format.h"
 
+Tensor::Tensor(const Tensor& other) {
+  operator=(other);
+}
+
+Tensor& Tensor::operator=(const Tensor& other) {
+  sizes_ = other.sizes_;
+  name_ = other.name_;
+  buffer_ = other.buffer_;
+  return *this;
+}
+
 int Tensor::TotalSize() {
   int size = 1;
   for (int i : sizes_) {
@@ -111,6 +122,11 @@ std::vector<float> Tensor::Read(GPU& gpu) {
 
   const float* output =
       (const float*)map_buffer.GetConstMappedRange(0, size * sizeof(float));
+  if (!output) {
+    fmt::print("Failed to map buffer, during Tensor::Read\n");
+    exit(0);
+    return out;
+  }
   for (int i = 0; i < size; i++) {
     out[i] = output[i];
   }

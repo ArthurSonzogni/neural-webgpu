@@ -55,24 +55,23 @@ Node Linear(Node input, int output_size) {
     }
 
     void Forward() override {
-      pipeline_.Run("fn_output",               //
-                    (output_size_ + 31) / 32,  //
-                    (batch_size_ + 3) / 4      //
+      pipeline_.Run("fn_output",                           //
+                    output_size_, (batch_size_ + 63) / 64  //
       );
     }
     void Backward() override {
-      pipeline_.Run("fn_input_gradient",      //
-                    (input_size_ + 31) / 32,  //
-                    (batch_size_ + 3) / 4     //
+      pipeline_.Run("fn_input_gradient",     //
+                    input_size_,             //
+                    (batch_size_ + 63) / 64  //
       );
 
-      pipeline_.Run("fn_weights_gradient",    //
-                    (input_size_ + 15) / 16,  //
-                    (output_size_ + 15) / 16  //
+      pipeline_.Run("fn_weights_gradient",  //
+                    (input_size_ + 7) / 8,  //
+                    (output_size_ + 7) / 8  //
       );
 
-      pipeline_.Run("fn_bias_gradient",         //
-                    (output_size_ + 255) / 256  //
+      pipeline_.Run("fn_bias_gradient",       //
+                    (output_size_ + 63) / 64  //
       );
     }
 

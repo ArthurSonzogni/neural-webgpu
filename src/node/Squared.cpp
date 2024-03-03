@@ -33,19 +33,9 @@ Node Squared(Node input) {
                              });
     }
 
-    void Forward() override {
-      pipeline_.Run("fn_output",          //
-                    (size_ + 255) / 256,  //
-                    1,                    //
-                    1                     //
-      );
-    }
+    void Forward() override { pipeline_.Run("fn_output", (size_ + 63) / 64); }
     void Backward() override {
-      pipeline_.Run("fn_input_gradient",  //
-                    (size_ + 255) / 256,  //
-                    1,                    //
-                    1                     //
-      );
+      pipeline_.Run("fn_input_gradient", (size_ + 63) / 64);
     }
 
     NodePipeline pipeline_{gpu()};

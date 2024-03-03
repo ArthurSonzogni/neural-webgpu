@@ -16,19 +16,19 @@ const output_size = output_dx * output_dy * batch_size;
 @group(0) @binding(2) var<storage, read_write> output: array<f32, output_size>;
 @group(0) @binding(3) var<storage, read_write> output_gradient: array<f32, output_size>;
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(1, 1, 64)
 fn fn_output(@builtin(global_invocation_id) id: vec3<u32>) {
   let x = id.x;
   let y = id.y;
   let b = id.z;
 
-  if (x >= output_dx || y >= output_dy) {
+  if (b >= batch_size) {
     return;
   }
 
   var max_value : f32 = -3.402823466e+38;
-  for (var i : u32 = 0; i < kernel_size; i++) {
-    for (var j : u32 = 0; j < kernel_size; j++) {
+  for (var j : u32 = 0; j < kernel_size; j++) {
+    for (var i : u32 = 0; i < kernel_size; i++) {
       let input_index = (i + kernel_size * x) + input_dx * (
                         (j + kernel_size * y) + input_dy * (
                         b
@@ -40,13 +40,13 @@ fn fn_output(@builtin(global_invocation_id) id: vec3<u32>) {
   output[output_index] = max_value;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(1, 1, 64)
 fn fn_input_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
   let x = id.x;
   let y = id.y;
   let b = id.z;
 
-  if (x >= input_dx || y >= input_dy) {
+  if (b >= batch_size) {
     return;
   }
 

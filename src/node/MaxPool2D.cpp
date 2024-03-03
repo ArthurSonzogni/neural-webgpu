@@ -27,11 +27,15 @@ Node MaxPool2D(Node input, int kernel_size) {
       output_sizes_[0] /= kernel_size;
       output_sizes_[1] /= kernel_size;
 
-      batch_size_ = input->outputs[0].TotalSize() / (input_sizes_[0] * input_sizes_[1]);
+      batch_size_ =
+          input->outputs[0].TotalSize() / (input_sizes_[0] * input_sizes_[1]);
 
       outputs = {
           Tensor(output_sizes_),
       };
+
+      fmt::print("MaxPool2D: {}, {}, {}, \n", output_sizes_[0], output_sizes_[1],
+                 batch_size_);
       outputs[0].Fill(gpu(), 0.f);
 
       SetupGradients();
@@ -51,17 +55,18 @@ Node MaxPool2D(Node input, int kernel_size) {
     }
 
     void Forward() override {
-      pipeline_.Run("fn_output",                   //
-                    (output_sizes_[0] + 15) / 16,  //
-                    (output_sizes_[1] + 15) / 16,  //
-                    batch_size_                    //
-      );                                           //
+      pipeline_.Run("fn_output",             //
+                    output_sizes_[0],        //
+                    output_sizes_[1],        //
+                    (batch_size_ + 63) / 64  //
+      );
     }
+
     void Backward() override {
-      pipeline_.Run("fn_input_gradient",          //
-                    (input_sizes_[0] + 15) / 16,  //
-                    (input_sizes_[1] + 15) / 16,  //
-                    batch_size_                   //
+      pipeline_.Run("fn_input_gradient",  //
+                    input_sizes_[0],      //
+                    input_sizes_[1],      //
+                    (batch_size_ + 63) / 64  //
       );
     }
 

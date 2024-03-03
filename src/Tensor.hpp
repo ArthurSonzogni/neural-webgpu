@@ -11,6 +11,11 @@ class Tensor {
   Tensor() = default;
   Tensor(std::vector<int> size) : sizes_(size) {}
 
+  // Tensor is copyable. Both the copy and the original will point to the same
+  // GPU buffer.
+  Tensor(const Tensor& other);
+  Tensor& operator=(const Tensor& other);
+
   // Name operations:
   void SetName(std::string name) { name_ = name; }
 

@@ -37,18 +37,10 @@ Node Softmax(Node input) {
     }
 
     void Forward() override {
-      pipeline_.Run("fn_output",  //
-                    size_,
-                    (batch_size_ + 255) / 256,  //
-                    1                           //
-      );
+      pipeline_.Run("fn_output", size_, (batch_size_ + 63) / 64);
     }
     void Backward() override {
-      pipeline_.Run("fn_input_gradient",  //
-                    size_,
-                    (batch_size_ + 255) / 256,  //
-                    1                           //
-      );
+      pipeline_.Run("fn_input_gradient", size_, (batch_size_ + 63) / 64);
     }
 
     NodePipeline pipeline_{gpu()};

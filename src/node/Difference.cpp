@@ -39,9 +39,9 @@ Node Difference(Node a, Node b) {
                              });
     }
 
-    void Forward() override { pipeline_.Run("fn_output", (size_ + 255) / 256); }
+    void Forward() override { pipeline_.Run("fn_output", (size_ + 63) / 64); }
     void Backward() override {
-      pipeline_.Run("fn_output_gradient", (size_ + 255) / 256);
+      pipeline_.Run("fn_output_gradient", (size_ + 63) / 64);
     }
 
     NodePipeline pipeline_{gpu()};

@@ -9,7 +9,7 @@ const batch_size : u32 = {};
 @group(0) @binding(2) var<storage, read_write> output: array<f32, size * batch_size>;
 @group(0) @binding(3) var<storage, read_write> output_gradient: array<f32, size * batch_size>;
 
-@compute @workgroup_size(1, 256, 1)
+@compute @workgroup_size(1, 64, 1)
 fn fn_output(@builtin(global_invocation_id) id: vec3<u32>) {
   let x = id.x;
   let b = id.y;
@@ -38,7 +38,7 @@ fn fn_output(@builtin(global_invocation_id) id: vec3<u32>) {
   output[index] = exp(value - best) / sum;
 }
 
-@compute @workgroup_size(1, 256, 1)
+@compute @workgroup_size(1, 64, 1)
 fn fn_input_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
   let x = id.x;
   let b = id.y;

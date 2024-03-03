@@ -42,7 +42,7 @@ TEST(Conv2D, Forward_Backward) {
   const int batch_size = 2;
   const int input_size = 3;
 
-  Node input = Input(gpu, {input_size, input_size, batch_size});
+  Node input = Input(gpu, {input_size, input_size, 1, batch_size});
   input->outputs[0].Write(gpu, {
                                    // Batch 1
                                    1, 0, 0,  //
@@ -101,17 +101,30 @@ TEST(Conv2D, MNIST) {
   const int output_size = 10;
 
   // Define the model:
-  Node x = Input(gpu, {input_size, input_size, batch_size});
+  Node x = Input(gpu, {input_size, input_size, 1, batch_size});
   Node y = Input(gpu, {output_size, batch_size});
   Node xx = x;
 
-  // 28x28x512 -> 13x13x8x512
-  xx = Conv2D(xx,               //
-              /*kernel=*/6,     //
+  // 28x28x512 -> 6x6x8x512
+  xx = BatchNormalization(xx);
+  xx = Conv2D(xx,              //
+              /*kernel=*/6,    //
               /*channels=*/16,  //
-              /*stride=*/2      //
+              /*stride=*/2     //
+  );
+  xx = MaxPool2D(xx, 2);
+  xx = LeakyReLU(xx);
+  xx = BatchNormalization(xx);
+
+  // 6x6x8x512 -> 4x4x32x512
+  xx = Conv2D(xx,               //
+              /*kernel=*/3,     //
+              /*channels=*/32,  //
+              /*stride=*/1      //
   );
   xx = LeakyReLU(xx);
+  xx = BatchNormalization(xx);
+  Node bn = xx;
 
   // 2x2x32x512 -> 30x512
   xx = Linear(xx, 30);
@@ -130,10 +143,9 @@ TEST(Conv2D, MNIST) {
         .Input(y, [&](int i) { return std::span(training_examples[i].output); })
         .Size(training_examples.size())
         .Minimize(loss)
-        .LearningRate(0.5f * std::pow(iteration + 1, -0.3f))
+        .LearningRate(5.0f * std::pow(iteration + 1, -0.3f))
         .Epochs(1)
         .Execute();
-    fmt::print("Iteration: {}\n", iteration);
 
     std::vector<std::vector<float>> predictions =
         Predict()
@@ -165,6 +177,13 @@ TEST(Conv2D, MNIST) {
       }
     }
 
+    //fmt::print("bn.weights.size = {}\n", bn->weights.size());
+    //auto v = bn->weights[0].Read(gpu);
+    //fmt::print(".size = {}\n", v.size());
+    //fmt::print(".0 = {}\n", v[0]);
+    //fmt::print(".1 = {}\n", v[1]);
+
+    // Draw a progression bar:
     fmt::print("Iteration: {} Error: {}/{} = {}\n", iteration, error,
                predictions.size(), error / predictions.size());
     error /= predictions.size();

@@ -1,16 +1,17 @@
-const input_dx : u32 = {};
-const input_dy : u32 = {};
-const channels : u32 = {};
-const kernel_size : u32 = {};
-const stride : u32 = {};
-const batch_size : u32 = {};
+const input_dx        : u32 = {};
+const input_dy        : u32 = {};
+const input_channels  : u32 = {};
+const output_channels : u32 = {};
+const kernel_size     : u32 = {};
+const stride          : u32 = {};
+const batch_size      : u32 = {};
 
 const output_dx = (input_dx - kernel_size) / stride + 1;
 const output_dy = (input_dy - kernel_size) / stride + 1;
 
-const input_size = input_dx * input_dy * batch_size;
-const params_size = kernel_size * kernel_size * channels;
-const output_size = output_dx * output_dy * channels * batch_size;
+const input_size  = input_dx    * input_dy    * input_channels  * batch_size;
+const params_size = kernel_size * kernel_size * input_channels  * output_channels;
+const output_size = output_dx   * output_dy   * output_channels * batch_size;
 
 // Input
 @group(0) @binding(0) var<storage, read_write> input: array<f32, input_size>;
@@ -24,102 +25,121 @@ const output_size = output_dx * output_dy * channels * batch_size;
 @group(0) @binding(4) var<storage, read_write> output: array<f32, output_size>;
 @group(0) @binding(5) var<storage, read_write> output_gradient: array<f32, output_size>;
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn fn_output(@builtin(global_invocation_id) id: vec3<u32>) {
-  let x = id.x;
-  let y = id.y;
-  let c = id.z % channels;
-  let b = id.z / channels;
+  let o_x = id.x;
+  let o_y = id.y;
+  let o_c = id.z % output_channels;
+  let b = id.z / output_channels;
 
-  if (x >= output_dx || y >= output_dy || b >= batch_size) {
+  if (o_x >= output_dx       || //
+      o_y >= output_dy       || //
+      o_c >= output_channels || //
+      b >= batch_size) {  //
     return;
   }
 
   var sum = 0.f;
-  for (var i : u32 = 0; i < kernel_size; i++) {
-    for (var j : u32 = 0; j < kernel_size; j++) {
-      let input_index = (i + stride * x) + input_dx * (
-                        (j + stride * y) + input_dy * (
-                        b
-      ));
-      let weight_index = (i + kernel_size * (
-                         (j + kernel_size * (
-                         c
-      ))));
-      sum += input[input_index] * weights[weight_index];
+  for (var i_c : u32 = 0; i_c < input_channels; i_c++) {
+    for (var w_y : u32 = 0; w_y < kernel_size; w_y++) {
+      for (var w_x : u32 = 0; w_x < kernel_size; w_x++) {
+        let i_x = w_x + stride * o_x;
+        let i_y = w_y + stride * o_y;
+        let input_index = i_x + input_dx * (
+                          i_y + input_dy * (
+                          i_c + input_channels * (
+                          b
+        )));
+        let weight_index = w_x + kernel_size * (
+                           w_y + kernel_size * (
+                           i_c + input_channels * (
+                           o_c  
+        )));
+        sum += input[input_index] * weights[weight_index];
+      }
     }
   }
-  let output_index = x + output_dx * (
-                     y + output_dy * (
-                     c + channels * (
+  let output_index = o_x + output_dx * (
+                     o_y + output_dy * (
+                     o_c + output_channels * (
                      b 
   )));
   output[output_index] = sum;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn fn_input_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
-  let x = id.x;
-  let y = id.y;
-  let b = id.z;
+  let i_x = id.x;
+  let i_y = id.y;
+  let i_c = id.z % input_channels;
+  let b = id.z / input_channels;
 
-  if (x >= input_dx || y >= input_dy) {
+  if (i_x >= input_dx || //
+      i_y >= input_dy) {
     return;
   }
 
   var sum = 0.0;
-  for (var c : u32 = 0; c < channels; c++) {
-    // Find every (X,i) that i + stride * X == x;
-    // Find every (Y,j) that j + stride * Y == y;
-    for(var i : u32 = x % stride; i < kernel_size; i += stride) {
-      for(var j : u32 = y % stride; j < kernel_size; j += stride) {
-        let X = (x - i) / stride;
-        let Y = (y - j) / stride;
+  for (var o_c : u32 = 0; o_c < output_channels; o_c++) {
+    // Find every (i_x,i) that i + stride * i_x == i_x;
+    // Find every (i_y,j) that j + stride * i_y == i_y;
+    for (var w_y : u32 = i_y % stride; w_y < kernel_size; w_y += stride) {
+      for (var w_x : u32 = i_x % stride; w_x < kernel_size; w_x += stride) {
+        let o_x = (i_x - w_x) / stride;
+        let o_y = (i_y - w_y) / stride;
 
-        let output_index = X + output_dx * (
-                           Y + output_dy * (
-                           c + channels * (
+        let output_index = o_x + output_dx * (
+                           o_y + output_dy * (
+                           o_c + output_channels * (
                            b
         )));
-        let weight_index = i + kernel_size * (
-                           j + kernel_size * (
-                           c
-        ));
+        let weight_index = w_x + kernel_size * (
+                           w_y + kernel_size * (
+                           i_c + input_channels * (
+                           o_c
+        )));
         sum += output_gradient[output_index] * weights[weight_index];
       }
     }
   }
-  let input_index = x + input_dx * (
-                    y + input_dy * (
+  let input_index = i_x + input_dx * (
+                    i_y + input_dy * (
+                    i_c + input_channels * (
                     b
-  ));
+  )));
+  sum /= f32(kernel_size * kernel_size * output_channels);
   input_gradient[input_index] = sum;
 }
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn fn_weight_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
   let w_x = id.x;
   let w_y = id.y;
-  let w_c = id.z;
+  let i_c = id.z % input_channels;
+  let o_c = id.z / input_channels;
 
-  if (w_x >= kernel_size || w_y >= kernel_size || w_c >= channels) {
+  if (w_x >= kernel_size    || //
+      w_y >= kernel_size    || //
+      i_c >= input_channels || //
+      o_c >= output_channels) {
     return;
   }
 
   var sum = 0.0;
   for (var b : u32 = 0; b < batch_size; b++) {
-    for(var o_x : u32 = 0; o_x < output_dx; o_x++) {
-      for(var o_y : u32 = 0; o_y < output_dy; o_y++) {
+    for (var o_y : u32 = 0; o_y < output_dy; o_y++) {
+      for (var o_x : u32 = 0; o_x < output_dx; o_x++) {
         let i_x = o_x * stride + w_x;
         let i_y = o_y * stride + w_y;
 
         let input_index = i_x + input_dx * (
                           i_y + input_dy * (
+                          i_c + input_channels * (
                           b
-        ));
+        )));
         let output_index = o_x + output_dx * (
                            o_y + output_dy * (
-                           w_c + channels * (
+                           o_c + output_channels * (
                            b
         )));
         sum += input[input_index] * output_gradient[output_index];
@@ -128,7 +148,9 @@ fn fn_weight_gradient(@builtin(global_invocation_id) id: vec3<u32>) {
   }
   let weight_index = w_x + kernel_size * (
                      w_y + kernel_size * (
-                     w_c
-  ));
+                     i_c + input_channels * (
+                     o_c
+  )));
+  sum /= f32(output_dx * output_dy);
   weights_gradient[weight_index] = sum;
 }

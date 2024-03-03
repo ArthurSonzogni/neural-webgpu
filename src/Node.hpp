@@ -24,6 +24,7 @@ Node LeakyReLU(Node input);
 Node Conv2D(Node input, int channels, int kernel_size, int stride = 1);
 Node Conv2DTranspose(Node input, int channels, int kernel_size, int stride = 1);
 Node MaxPool2D(Node input, int kernel_size);
+Node BatchNormalization(Node input);
 
 class UpdateParams;
 

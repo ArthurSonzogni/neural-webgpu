@@ -47,6 +47,8 @@ add_library(NeuralWebGPU
 	src/Shader.hpp
 	src/Tensor.cpp
 	src/Tensor.hpp
+	src/node/BatchNormalization.cpp
+	src/node/BatchNormalization.wgsl.hpp
 	src/node/Conv2D.cpp
 	src/node/Conv2D.wgsl.hpp
 	src/node/CrossEntropy.cpp

@@ -2,8 +2,8 @@
 #include "Shader.hpp"
 #include "Tensor.hpp"
 #include "fmt/format.h"
-#include "node/NodePipeline.hpp"
 #include "node/HuberLoss.wgsl.hpp"
+#include "node/NodePipeline.hpp"
 
 #include <iostream>
 
@@ -36,15 +36,15 @@ Node HuberLoss(Node input) {
     }
 
     void Forward() override {
-      pipeline_.Run("fn_output",          //
-                    (size_ + 255) / 256,  //
-                    1,                    //
-                    1                     //
+      pipeline_.Run("fn_output",        //
+                    (size_ + 63) / 64,  //
+                    1,                  //
+                    1                   //
       );
     }
     void Backward() override {
       pipeline_.Run("fn_input_gradient",  //
-                    (size_ + 255) / 256,  //
+                    (size_ + 63) / 64,    //
                     1,                    //
                     1                     //
       );
