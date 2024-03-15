@@ -46,19 +46,13 @@ void Model::Execute() {
         const int local_offset = (g + i) % size_;
         input.node->outputs[0].WritePartialBatch(
             gpu, input.generator(local_offset), i);
-        gpu.Instance().ProcessEvents();
       }
     }
-
-    gpu.Instance().ProcessEvents();
 
     // Forward pass:
     for (NodePtr node : forward_nodes) {
       node->Forward();
-      gpu.Instance().ProcessEvents();
     }
-
-    gpu.Instance().ProcessEvents();
 
     // We want to minimize the loss.
     output_->outputs[0].CopyTo(gpu, output_->outputs_gradients[0]);
@@ -77,14 +71,9 @@ void Model::Execute() {
       gpu.Instance().ProcessEvents();
     }
 
-    gpu.Instance().ProcessEvents();
-
     // Update parameters:
     for (NodePtr node : backward_nodes) {
       node->UpdateParameters(learning_rate_ / batch_size);
-      gpu.Instance().ProcessEvents();
     }
-
-    gpu.Instance().ProcessEvents();
   }
 }

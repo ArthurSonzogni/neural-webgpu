@@ -32,6 +32,7 @@ std::vector<std::vector<float>> Predict::Execute() {
   std::vector<NodePtr> forward_nodes =
       NodeImpl::ForwardPassNodes(reference_node, output_.get());
 
+
   for (int g = 0; g < size_; g += batch_size) {
     // Fill inputs:
     for (PredictInputArgument& input : inputs_) {

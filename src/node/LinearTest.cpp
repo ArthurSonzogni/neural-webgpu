@@ -49,7 +49,7 @@ TEST(Linear, Forward_Backward) {
                                    4, 5, 6,  // Batch 1
                                });
 
-  Node linear = Linear(input, output_size);
+  Node linear = Linear(input, {output_size});
   linear->weights[0].Write(gpu, {
                                     1, 2, 3,  // Output 0
                                     4, 5, 6,  // Output 1
@@ -117,7 +117,7 @@ TEST(Linear, Training) {
   // Define the model:
   Node x = Input(gpu, {input_size, batch_size});
   Node y = Input(gpu, {output_size, batch_size});
-  Node l = Linear(x, output_size);
+  Node l = Linear(x, {output_size});
   Node loss = HuberLoss(Difference(l, y));
 
   // Generate random training data. z = 3*x + 2*y + 1.
@@ -171,9 +171,9 @@ TEST(Linear, MNIST) {
   Node y = Input(gpu, {output_size, batch_size});
   Node xx = x;
   xx = MaxPool2D(xx, 2);
-  xx = Linear(xx, 30);
+  xx = Linear(xx, {30});
   xx = LeakyReLU(xx);
-  xx = Linear(xx, output_size);
+  xx = Linear(xx, {output_size});
   xx = Softmax(xx);
   Node predicted = xx;
   Node loss = CrossEntropy(y, predicted);

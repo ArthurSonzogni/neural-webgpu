@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-Node Linear(Node input, int output_size) {
+Node Linear(Node input, std::vector<int> output_sizes) {
   class Impl : public NodeImpl {
    public:
     std::string Name() override { return "Linear"; }
@@ -16,7 +16,13 @@ Node Linear(Node input, int output_size) {
     int input_size_;
     int output_size_;
 
-    Impl(Node input, int output_size) : NodeImpl(input) {
+    Impl(Node input, std::vector<int> output_sizes) : NodeImpl(input) {
+      float output_size = 1;
+      for (int i = 0; i < output_sizes.size(); i++) {
+        output_size *= output_sizes[i];
+      }
+      output_size_ = output_size;
+
       batch_size_ = input->outputs[0].BatchSize();
       input_size_ = input->outputs[0].TotalSize() / batch_size_;
       output_size_ = output_size;
@@ -28,11 +34,10 @@ Node Linear(Node input, int output_size) {
       weights[0].FillRandomGaussian(gpu(), 0.f, 1.f / sqrtf(input_size_));
       weights[1].FillRandomGaussian(gpu(), 0.f, 1.f / sqrtf(input_size_));
 
+      output_sizes.push_back(batch_size_);
+
       outputs = {
-          Tensor({
-              output_size_,
-              batch_size_,
-          }),
+          Tensor(output_sizes),
       };
       outputs[0].Fill(gpu(), 0.f);
 
@@ -77,5 +82,5 @@ Node Linear(Node input, int output_size) {
 
     NodePipeline pipeline_{gpu()};
   };
-  return std::make_shared<Impl>(input, output_size);
+  return std::make_shared<Impl>(input, output_sizes);
 }

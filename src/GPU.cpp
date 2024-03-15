@@ -1,11 +1,18 @@
 #include "GPU.hpp"
-#include "fmt/format.h"
 #include <set>
+#include "fmt/format.h"
 
 namespace {
+
+static int num_errors = 0;
+
 std::set<GPU*> g_gpus;
-void AddGPU(GPU* gpu) { g_gpus.insert(gpu); }
-void RemoveGPU(GPU* gpu) { g_gpus.erase(gpu); }
+void AddGPU(GPU* gpu) {
+  g_gpus.insert(gpu);
+}
+void RemoveGPU(GPU* gpu) {
+  g_gpus.erase(gpu);
+}
 GPU* GetGPU(void* userdata) {
   GPU* gpu = reinterpret_cast<GPU*>(userdata);
   if (g_gpus.find(gpu) == g_gpus.end()) {
@@ -14,7 +21,6 @@ GPU* GetGPU(void* userdata) {
 
   return gpu;
 }
-
 
 namespace cGPU {
 
@@ -56,7 +62,7 @@ GPU::GPU() {
   AddGPU(this);
   instance_ = wgpu::CreateInstance();
   wgpu::RequestAdapterOptions options{
-      .powerPreference = wgpu::PowerPreference::HighPerformance,
+      //.powerPreference = wgpu::PowerPreference::HighPerformance,
   };
   instance_.RequestAdapter(&options, cGPU::OnAdapterFound,
                            reinterpret_cast<void*>(this));
@@ -70,7 +76,7 @@ void GPU::OnAdapterFound(WGPURequestAdapterStatus status,
                          WGPUAdapter adapter_handle,
                          char const* message) {
   if (status != WGPURequestAdapterStatus_Success) {
-    fmt::print("Failed to find an adapter: {}\n", message);
+    fmt::print(stderr, "Failed to find an adapter: {}\n", message);
     exit(0);
     return;
   }
@@ -98,7 +104,7 @@ void GPU::OnDeviceFound(WGPURequestDeviceStatus status,
                         WGPUDevice device_handle,
                         char const* message) {
   if (status != WGPURequestDeviceStatus_Success) {
-    fmt::print("Failed to create device: {}\n", message);
+    fmt::print(stderr, "Failed to create device: {}\n", message);
     exit(0);
     return;
   }
@@ -111,55 +117,63 @@ void GPU::OnDeviceFound(WGPURequestDeviceStatus status,
 }
 
 void GPU::OnError(WGPUErrorType type, char const* message) {
-  switch(type) {
+  switch (type) {
     case WGPUErrorType_NoError:
-      fmt::print("WGPU: No error: {}\n", message);
+      fmt::print(stderr, "WGPU: No error: {}\n", message);
       break;
 
     case WGPUErrorType_Validation:
-      fmt::print("WGPU: Validation error: {}\n", message);
+      fmt::print(stderr, "WGPU: Validation error: {}\n", message);
       break;
 
     case WGPUErrorType_OutOfMemory:
-      fmt::print("WGPU: Out of memory: {}\n", message);
+      fmt::print(stderr, "WGPU: Out of memory: {}\n", message);
       break;
 
     case WGPUErrorType_Internal:
-      fmt::print("WGPU: Internal error: {}\n", message);
+      fmt::print(stderr, "WGPU: Internal error: {}\n", message);
       break;
 
     case WGPUErrorType_Unknown:
-      fmt::print("WGPU: Unknown error: {}\n", message);
+      fmt::print(stderr, "WGPU: Unknown error: {}\n", message);
       break;
 
     case WGPUErrorType_DeviceLost:
-      fmt::print("WGPU: Device lost: {}\n", message);
+      fmt::print(stderr, "WGPU: Device lost: {}\n", message);
       break;
 
     case WGPUErrorType_Force32:
-      fmt::print("WGPU: Force32 error: {}\n", message);
+      fmt::print(stderr, "WGPU: Force32 error: {}\n", message);
       break;
 
     default:
-      fmt::print("WGPU: Unknown error type: {}\n", message);
+      fmt::print(stderr, "WGPU: Unknown error type: {}\n", message);
       break;
+  }
+
+  if (num_errors++ > 10) {
+    exit(0);
   }
 }
 
 void GPU::OnDeviceLost(WGPUDeviceLostReason reason, char const* message) {
-  switch(reason) {
+  switch (reason) {
     case WGPUDeviceLostReason_Undefined:
-      fmt::print("WGPU: Device lost (undefined), {}\n", message);
+      fmt::print(stderr, "WGPU: Device lost (undefined), {}\n", message);
       break;
     case WGPUDeviceLostReason_Destroyed:
-      fmt::print("WGPU: Device lost destroyed, {}\n", message);
+      fmt::print(stderr, "WGPU: Device lost destroyed, {}\n", message);
       break;
     case WGPUDeviceLostReason_Force32:
-      fmt::print("WGPU: Device lost force 32, {}\n", message);
+      fmt::print(stderr, "WGPU: Device lost force 32, {}\n", message);
       break;
 
     default:
-      fmt::print("WGPU: Device lost (default), {}\n", message);
+      fmt::print(stderr, "WGPU: Device lost (default), {}\n", message);
       break;
+  }
+
+  if (num_errors++ > 10) {
+    exit(0);
   }
 }

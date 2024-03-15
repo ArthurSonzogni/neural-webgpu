@@ -11,20 +11,21 @@ class NodeImpl;
 using Node = std::shared_ptr<NodeImpl>;
 using NodePtr = NodeImpl*;
 
-Node Input(GPU& gpu, std::vector<int> sizes);
-Node Linear(Node input, int output_size);
-Node Difference(Node a, Node b);
-Node Squared(Node input);
-Node Sigmoid(Node input);
-Node Softmax(Node input);
-Node CrossEntropy(Node a, Node b);
-Node HuberLoss(Node input);
-Node ReLU(Node input);
-Node LeakyReLU(Node input);
+Node BatchNormalization(Node input);
 Node Conv2D(Node input, int channels, int kernel_size, int stride = 1);
 Node Conv2DTranspose(Node input, int channels, int kernel_size, int stride = 1);
+Node CrossEntropy(Node a, Node b);
+Node Difference(Node a, Node b);
+Node HuberLoss(Node input);
+Node Input(GPU& gpu, std::vector<int> sizes);
+Node LeakyReLU(Node input);
+Node Linear(Node input, std::vector<int> output_size);
 Node MaxPool2D(Node input, int kernel_size);
-Node BatchNormalization(Node input);
+Node ReLU(Node input);
+Node Sigmoid(Node input);
+Node Softmax(Node input);
+Node Squared(Node input);
+Node Interpolation2D(Node input, int width, int height);
 
 class UpdateParams;
 
@@ -38,6 +39,8 @@ class NodeImpl {
 
   std::vector<Tensor> weights;
   std::vector<Tensor> weights_gradients;
+  std::vector<Tensor> weights_gradients_squared_sum;
+  std::vector<Tensor> weights_momentum;
 
   std::vector<Tensor> outputs;
   std::vector<Tensor> outputs_gradients;

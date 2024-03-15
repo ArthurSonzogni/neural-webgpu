@@ -10,10 +10,13 @@ Node Input(GPU& gpu, std::vector<int> sizes) {
       outputs = {
         Tensor(sizes)
       };
+      outputs[0].SetName("Input outputs[0]");
+      outputs[0].Fill(gpu, 0.f);
+
       outputs_gradients = {
         Tensor(sizes)
       };
-      outputs[0].Fill(gpu, 0.f);
+      outputs_gradients[0].SetName("Input outputs_gradients[0]");
       outputs_gradients[0].Fill(gpu, 0.f);
     }
 

@@ -27,6 +27,12 @@ class UpdateParams {
       @group(0) @binding(0) var<storage, read_write> learning_rate: f32;
       @group(0) @binding(1) var<storage, read_write> weights: array<f32>;
       @group(0) @binding(2) var<storage, read_write> weights_gradients: array<f32>;
+      @group(0) @binding(3) var<storage, read_write> weights_gradients_squared_sum: array<f32>;
+      @group(0) @binding(4) var<storage, read_write> weights_momentum: array<f32>;
+
+      const epsilon: f32 = 1e-8;
+      const beta_1 = 0.9;
+      const beta_2 = 0.99;
 
       @compute @workgroup_size(256, 1, 1)
       fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -35,10 +41,23 @@ class UpdateParams {
           return;
         }
 
-        let weight = weights[x];
         let gradient = weights_gradients[x];
-        let new_weight = weight - learning_rate * gradient;
-        weights[x] = new_weight;
+        weights_gradients_squared_sum[x] = mix(
+          gradient * gradient,
+          weights_gradients_squared_sum[x],
+          beta_2
+        );
+
+        weights_momentum[x] = mix(
+          gradient,
+          weights_momentum[x],
+          beta_1
+        );
+
+        weights[x] -= learning_rate * weights_momentum[x] / (
+          sqrt(weights_gradients_squared_sum[x]) +
+          epsilon
+        );
       }
     )");
   }
@@ -68,24 +87,24 @@ void NodeImpl::AddNode(Node& input) {
 // starting from the input node and ending at the output node.
 std::vector<NodePtr> NodeImpl::ForwardPassNodes(NodePtr input, NodePtr output) {
   std::unordered_set<NodePtr> relevant_nodes = RelevantNodes(input, output);
-  std::vector<NodePtr> sorted_nodes;
+  std::vector<NodePtr> toposort;
   std::unordered_set<NodePtr> visited;
-  std::queue<NodePtr> queue;
-  queue.push(input);
-  while (!queue.empty()) {
-    NodePtr node = queue.front();
-    queue.pop();
-    if (visited.count(node) == 0) {
-      visited.insert(node);
-      if (relevant_nodes.count(node) > 0) {
-        sorted_nodes.push_back(node);
-      }
-      for (NodePtr output : node->output_nodes) {
-        queue.push(output);
-      }
+  auto visit = std::function<void(NodePtr)>();
+  visit = [&](NodePtr node) {
+    if (visited.count(node)) {
+      return;
     }
-  }
-  return sorted_nodes;
+    visited.insert(node);
+    if (!relevant_nodes.count(node)) {
+      return;
+    }
+    for (Node input : node->input_nodes) {
+      visit(input.get());
+    }
+    toposort.push_back(node);
+  };
+  visit(output);
+  return toposort;
 }
 
 // Returns a topology-sorted list of nodes to be used in the backward pass,
@@ -93,24 +112,24 @@ std::vector<NodePtr> NodeImpl::ForwardPassNodes(NodePtr input, NodePtr output) {
 std::vector<NodePtr> NodeImpl::BackwardPassNodes(NodePtr input,
                                                  NodePtr output) {
   std::unordered_set<NodePtr> relevant_nodes = RelevantNodes(input, output);
-  std::vector<NodePtr> sorted_nodes;
+  std::vector<NodePtr> toposort;
   std::unordered_set<NodePtr> visited;
-  std::queue<NodePtr> queue;
-  queue.push(output);
-  while (!queue.empty()) {
-    NodePtr node = queue.front();
-    queue.pop();
-    if (visited.count(node) == 0) {
-      visited.insert(node);
-      if (relevant_nodes.count(node) > 0) {
-        sorted_nodes.push_back(node);
-      }
-      for (Node input : node->input_nodes) {
-        queue.push(input.get());
-      }
+  auto visit = std::function<void(NodePtr)>();
+  visit = [&](NodePtr node) {
+    if (visited.count(node)) {
+      return;
     }
-  }
-  return sorted_nodes;
+    visited.insert(node);
+    if (!relevant_nodes.count(node)) {
+      return;
+    }
+    for (NodeImpl* output : node->output_nodes) {
+      visit(NodePtr(output));
+    }
+    toposort.push_back(node);
+  };
+  visit(input);
+  return toposort;
 }
 
 void NodeImpl::UpdateParameters(float learning_rate) {
@@ -127,6 +146,12 @@ void NodeImpl::SetupGradients() {
   for (Tensor& parameter : weights) {
     weights_gradients.push_back(Tensor(parameter.sizes()));
     weights_gradients.back().Fill(gpu(), 0.f);
+
+    weights_gradients_squared_sum.push_back(Tensor(parameter.sizes()));
+    weights_gradients_squared_sum.back().Fill(gpu(), 1.f);
+
+    weights_momentum.push_back(Tensor(parameter.sizes()));
+    weights_momentum.back().Fill(gpu(), 0.f);
   }
 
   for (int i = 0; i < weights.size(); ++i) {
@@ -135,6 +160,8 @@ void NodeImpl::SetupGradients() {
                                       &update_params_->learning_rate,
                                       &weights[i],
                                       &weights_gradients[i],
+                                      &weights_gradients_squared_sum[i],
+                                      &weights_momentum[i],
                                   });
   }
 

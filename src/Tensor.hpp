@@ -9,7 +9,7 @@
 class Tensor {
  public:
   Tensor() = default;
-  Tensor(std::vector<int> size) : sizes_(size) {}
+  Tensor(std::vector<int> size);
 
   // Tensor is copyable. Both the copy and the original will point to the same
   // GPU buffer.

@@ -3,6 +3,8 @@
 #include <random>
 #include "fmt/format.h"
 
+Tensor::Tensor(std::vector<int> size) : sizes_(size) {}
+
 Tensor::Tensor(const Tensor& other) {
   operator=(other);
 }
@@ -130,6 +132,6 @@ std::vector<float> Tensor::Read(GPU& gpu) {
   for (int i = 0; i < size; i++) {
     out[i] = output[i];
   }
-  map_buffer.Unmap();
+
   return out;
 }

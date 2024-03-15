@@ -30,7 +30,7 @@ fn fn_output_gradient(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
-  let gradient = output_gradient[x];
-  input_a_gradient[x] = gradient;
-  input_b_gradient[x] = -gradient;
+  let dx = output_gradient[x];
+  input_a_gradient[x] = dx;
+  input_b_gradient[x] = -dx;
 }

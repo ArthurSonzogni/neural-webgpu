@@ -127,11 +127,11 @@ TEST(Conv2D, MNIST) {
   Node bn = xx;
 
   // 2x2x32x512 -> 30x512
-  xx = Linear(xx, 30);
+  xx = Linear(xx, {30});
   xx = LeakyReLU(xx);
 
   // 30x512 -> 10x512
-  xx = Linear(xx, output_size);
+  xx = Linear(xx, {output_size});
   xx = Softmax(xx);
 
   Node predicted = xx;
@@ -143,7 +143,7 @@ TEST(Conv2D, MNIST) {
         .Input(y, [&](int i) { return std::span(training_examples[i].output); })
         .Size(training_examples.size())
         .Minimize(loss)
-        .LearningRate(5.0f * std::pow(iteration + 1, -0.3f))
+        .LearningRate(10.f * std::pow(iteration + 1, -0.3f))
         .Epochs(1)
         .Execute();
 
